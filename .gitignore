@@ -25,6 +25,7 @@ reports/
 # VS Code
 .vscode/
 
+
 # Mantener visibles las carpetas vacías con .gitkeep
 !data/.gitkeep
 !artifacts/.gitkeep
