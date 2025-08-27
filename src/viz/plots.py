@@ -1,0 +1,1 @@
+"""Funciones de visualización: scatter 3D, embeddings 2D/3D, curvas vs. k."""
