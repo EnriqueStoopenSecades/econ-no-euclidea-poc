@@ -16,7 +16,6 @@ __pycache__/
 
 # Datos y resultados
 /data/
-artifacts/
 reports/
 
 # Jupyter
