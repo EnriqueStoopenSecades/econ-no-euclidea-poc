@@ -7,13 +7,12 @@ from __future__ import annotations
 import numpy as np
 
 def local_coordinates(X: np.ndarray, center: np.ndarray, E: np.ndarray):
-    """Proyecta X al sistema de coordenadas local definido por (center, E)."""
-    pass
-
-def estimate_metric(coords_local: np.ndarray):
     """
-    Estima g_ij con base en vecinos en coords locales (p.ej., covarianza).
+    Proyecta puntos X al sistema de coordenadas local definido por (center, E).
+    E: base ortonormal del plano tangente (D x d). Usamos coords = (X - center) @ E.
     Returns:
-        g: (d, d) métrica simétrica positiva aproximada
+        coords: (n, d) coordenadas locales
     """
-    pass
+    Xc = X - center  # centrar en el punto
+    coords = Xc @ E  # proyectar a la base tangente
+    return coords
