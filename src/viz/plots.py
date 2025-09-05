@@ -145,3 +145,87 @@ def plot_local_patch_with_ellipse(coords2: np.ndarray, g: np.ndarray,
     if outpath:
         plt.savefig(outpath, dpi=300, bbox_inches="tight")
     plt.show()
+
+
+
+def plot_geodesic_vs_euclidean(
+    X: np.ndarray,
+    G: nx.Graph,
+    src: int,
+    dst: int,
+    outpath: str | None = None,
+    title: str = "Geodésica vs distancia euclídea"
+    ):
+    """
+    Compara camino más corto (geodésica aprox) contra segmento euclídeo directo.
+
+    Args:
+        X : np.ndarray (n,3) con coordenadas.
+        G : grafo k-NN con pesos = distancias.
+        src, dst : índices de nodos origen y destino.
+        outpath : ruta opcional para guardar la figura.
+        title : título de la figura.
+    """
+    # Camino en el grafo
+    path = nx.shortest_path(G, source=src, target=dst, weight="weight")
+    coords_path = X[path]
+
+    # Segmento euclídeo directo
+    coords_euc = X[[src, dst]]
+
+    # Distancias
+    geo_dist = nx.shortest_path_length(G, source=src, target=dst, weight="weight")
+    euc_dist = np.linalg.norm(X[src] - X[dst])
+
+    fig = plt.figure(figsize=(6,6))
+    ax = fig.add_subplot(111, projection="3d")
+
+    # nube completa
+    ax.scatter(X[:,0], X[:,1], X[:,2], s=8, alpha=0.35, c="lightgray")
+
+    # geodésica
+    ax.plot(coords_path[:,0], coords_path[:,1], coords_path[:,2],
+            c="red", linewidth=2, label=f"geodésica ~ {geo_dist:.3f}")
+    # euclídea
+    ax.plot(coords_euc[:,0], coords_euc[:,1], coords_euc[:,2],
+            c="blue", linestyle="--", linewidth=2, label=f"euclídea ~ {euc_dist:.3f}")
+
+    # marcar extremos
+    ax.scatter(*X[src], c="green", s=50, label="origen")
+    ax.scatter(*X[dst], c="purple", s=50, label="destino")
+
+    for a in (ax.set_xlim, ax.set_ylim, ax.set_zlim):
+        a([-1.2, 1.2])
+
+    ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_zlabel("z")
+    ax.set_title(title)
+    ax.legend()
+
+    if outpath:
+        plt.savefig(outpath, dpi=300, bbox_inches="tight")
+    plt.show()
+
+
+def plot_geodesic_distance_matrix(
+    D: np.ndarray,
+    outpath: str | None = None,
+    title: str = "Matriz de distancias geodésicas (D)",
+    cmap: str = "viridis"
+    ):
+    """
+    Dibuja la matriz de distancias geodésicas como heatmap.
+
+    Args:
+        D : np.ndarray (n,n) matriz de distancias geodésicas.
+        outpath : ruta para guardar la figura (PNG). Si None, solo muestra.
+        title : título del gráfico.
+        cmap : colormap de matplotlib (por defecto 'viridis').
+    """
+    fig, ax = plt.subplots(figsize=(5,4))
+    im = ax.imshow(D, cmap=cmap)
+    cbar = plt.colorbar(im, ax=ax, label="dist geodésica")
+    ax.set_title(title)
+
+    if outpath:
+        plt.savefig(outpath, dpi=300, bbox_inches="tight")
+    plt.show()
