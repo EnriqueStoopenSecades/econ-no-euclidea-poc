@@ -68,3 +68,164 @@ def plot_radius_hist(r_clean: np.ndarray, r_noisy: np.ndarray, outpath: str | No
     if outpath:
         plt.savefig(outpath, dpi=300, bbox_inches="tight")
     plt.show()
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+import networkx as nx  # por si lo necesitas en otros plots
+
+def plot_tangent_frame_3d(X: np.ndarray, center_idx: int, E: np.ndarray, normal: np.ndarray,
+                          scale: float = 0.25, outpath: str | None = None,
+                          title: str = "Plano tangente y normal (LPCA)"):
+    """
+    Dibuja los puntos 3D, resalta el punto central y traza:
+      - Dos vectores tangentes (columnas de E)
+      - El vector normal
+    """
+    fig = plt.figure(figsize=(6,6))
+    ax = fig.add_subplot(111, projection="3d")
+
+    # nube
+    ax.scatter(X[:,0], X[:,1], X[:,2], s=10, alpha=0.45)
+
+    # punto central
+    c = X[center_idx]
+    ax.scatter([c[0]], [c[1]], [c[2]], s=60)
+
+    # vectores tangentes (en rojo y naranja)
+    t1 = E[:,0]; ax.plot([c[0], c[0] + scale*t1[0]], [c[1], c[1] + scale*t1[1]], [c[2], c[2] + scale*t1[2]])
+    if E.shape[1] > 1:
+        t2 = E[:,1]; ax.plot([c[0], c[0] + scale*t2[0]], [c[1], c[1] + scale*t2[1]], [c[2], c[2] + scale*t2[2]])
+
+    # normal (en una tercera dirección)
+    if normal is not None:
+        n = normal
+        ax.plot([c[0], c[0] + scale*n[0]], [c[1], c[1] + scale*n[1]], [c[2], c[2] + scale*n[2]])
+
+    for a in (ax.set_xlim, ax.set_ylim, ax.set_zlim):
+        a([-1.3, 1.3])
+
+    ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_zlabel("z")
+    ax.set_title(title)
+
+    if outpath:
+        plt.savefig(outpath, dpi=300, bbox_inches="tight")
+    plt.show()
+import numpy as np
+import matplotlib.pyplot as plt
+
+def plot_local_patch_with_ellipse(coords2: np.ndarray, g: np.ndarray,
+                                  outpath: str | None = None,
+                                  title: str = "Parche local + elipse (métrica)"):
+
+    # autovalores/vectores de g (métrica normalizada)
+    evals, evecs = np.linalg.eigh(g)
+    # ordenar desc (para etiquetar mayor/menor)
+    idx = np.argsort(evals)[::-1]
+    evals = evals[idx]; evecs = evecs[:, idx]
+
+    # construimos el contorno de elipse a 1 desviación (escala visual)
+    theta = np.linspace(0, 2*np.pi, 200)
+    circle = np.stack([np.cos(theta), np.sin(theta)], axis=1)  # (200,2)
+
+    # “raíz” de la métrica (o inversa si prefieres ver iso-contornos); aquí usamos evecs * sqrt(evals)
+    A = evecs @ np.diag(np.sqrt(np.maximum(evals, 1e-12)))
+    ell = circle @ A.T
+
+    plt.figure(figsize=(5.5, 5.5))
+    plt.scatter(coords2[:,0], coords2[:,1], s=20, alpha=0.8, label="vecinos")
+    plt.plot(ell[:,0], ell[:,1], linewidth=2, label="elipse métrica (trace=2)")
+
+    plt.axhline(0, linewidth=1); plt.axvline(0, linewidth=1)
+    plt.gca().set_aspect("equal", adjustable="box")
+    plt.title(title)
+    plt.xlabel("e1"); plt.ylabel("e2")
+    plt.legend()
+
+    if outpath:
+        plt.savefig(outpath, dpi=300, bbox_inches="tight")
+    plt.show()
+
+
+
+def plot_geodesic_vs_euclidean(
+    X: np.ndarray,
+    G: nx.Graph,
+    src: int,
+    dst: int,
+    outpath: str | None = None,
+    title: str = "Geodésica vs distancia euclídea"
+    ):
+    """
+    Compara camino más corto (geodésica aprox) contra segmento euclídeo directo.
+
+    Args:
+        X : np.ndarray (n,3) con coordenadas.
+        G : grafo k-NN con pesos = distancias.
+        src, dst : índices de nodos origen y destino.
+        outpath : ruta opcional para guardar la figura.
+        title : título de la figura.
+    """
+    # Camino en el grafo
+    path = nx.shortest_path(G, source=src, target=dst, weight="weight")
+    coords_path = X[path]
+
+    # Segmento euclídeo directo
+    coords_euc = X[[src, dst]]
+
+    # Distancias
+    geo_dist = nx.shortest_path_length(G, source=src, target=dst, weight="weight")
+    euc_dist = np.linalg.norm(X[src] - X[dst])
+
+    fig = plt.figure(figsize=(6,6))
+    ax = fig.add_subplot(111, projection="3d")
+
+    # nube completa
+    ax.scatter(X[:,0], X[:,1], X[:,2], s=8, alpha=0.35, c="lightgray")
+
+    # geodésica
+    ax.plot(coords_path[:,0], coords_path[:,1], coords_path[:,2],
+            c="red", linewidth=2, label=f"geodésica ~ {geo_dist:.3f}")
+    # euclídea
+    ax.plot(coords_euc[:,0], coords_euc[:,1], coords_euc[:,2],
+            c="blue", linestyle="--", linewidth=2, label=f"euclídea ~ {euc_dist:.3f}")
+
+    # marcar extremos
+    ax.scatter(*X[src], c="green", s=50, label="origen")
+    ax.scatter(*X[dst], c="purple", s=50, label="destino")
+
+    for a in (ax.set_xlim, ax.set_ylim, ax.set_zlim):
+        a([-1.2, 1.2])
+
+    ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_zlabel("z")
+    ax.set_title(title)
+    ax.legend()
+
+    if outpath:
+        plt.savefig(outpath, dpi=300, bbox_inches="tight")
+    plt.show()
+
+
+def plot_geodesic_distance_matrix(
+    D: np.ndarray,
+    outpath: str | None = None,
+    title: str = "Matriz de distancias geodésicas (D)",
+    cmap: str = "viridis"
+    ):
+    """
+    Dibuja la matriz de distancias geodésicas como heatmap.
+
+    Args:
+        D : np.ndarray (n,n) matriz de distancias geodésicas.
+        outpath : ruta para guardar la figura (PNG). Si None, solo muestra.
+        title : título del gráfico.
+        cmap : colormap de matplotlib (por defecto 'viridis').
+    """
+    fig, ax = plt.subplots(figsize=(5,4))
+    im = ax.imshow(D, cmap=cmap)
+    cbar = plt.colorbar(im, ax=ax, label="dist geodésica")
+    ax.set_title(title)
+
+    if outpath:
+        plt.savefig(outpath, dpi=300, bbox_inches="tight")
+    plt.show()

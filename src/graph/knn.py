@@ -66,3 +66,21 @@ def build_knn_graph(X: np.ndarray, k: int = 10) -> nx.Graph:
 
     return G
 
+def graph_summary(G: nx.Graph) -> dict:
+    comps = list(nx.connected_components(G))
+    n = G.number_of_nodes()
+    m = G.number_of_edges()
+    avg_deg = 0.0 if n == 0 else (2.0 * m) / n
+    return {
+        "nodes": n,
+        "edges": m,
+        "components": len(comps),
+        "avg_degree": avg_deg,
+        "is_connected": len(comps) == 1,
+    }
+
+def largest_component_subgraph(G: nx.Graph) -> nx.Graph:
+    if G.number_of_nodes() == 0:
+        return G.copy()
+    giant = max(nx.connected_components(G), key=len)
+    return G.subgraph(giant).copy()
